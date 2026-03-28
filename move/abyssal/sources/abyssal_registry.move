@@ -19,6 +19,9 @@ module abyssal::abyssal_registry {
     use abyssal::abyssal_types;
     // Events defined inline (Sui requires event structs in same module as emit)
 
+    // BN254 scalar field order (poseidon_bn254 requires inputs < this value)
+    const BN254_R: u256 = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
     // ===== Error Codes =====
     const EInvalidProof: u64 = 0;
     const EInvalidTEESignature: u64 = 1;
@@ -37,6 +40,7 @@ module abyssal::abyssal_registry {
     public struct VaultCreated has copy, drop {
         vault_id: ID, owner: address, seal_policy_id: ID,
         pk_blob_id: vector<u8>, wasm_blob_id: vector<u8>,
+        circuit_source_blob_id: vector<u8>,
     }
     public struct EnclaveRegistered has copy, drop { vault_id: ID, enclave_pubkey: vector<u8> }
     public struct EnclaveUnregistered has copy, drop { vault_id: ID, enclave_pubkey: vector<u8> }
@@ -63,9 +67,10 @@ module abyssal::abyssal_registry {
         // Circuit identity: SHA-256(SHA-256(wasm_plaintext)), 32 bytes
         wasm_double_hash: vector<u8>,
 
-        // Encrypted pk/wasm on Walrus
+        // Encrypted pk/wasm/circuit-source on Walrus
         pk_blob_id: vector<u8>,
         wasm_blob_id: vector<u8>,
+        circuit_source_blob_id: vector<u8>,
 
         // Seal policy object ID
         seal_policy_id: ID,
@@ -112,6 +117,7 @@ module abyssal::abyssal_registry {
         wasm_double_hash: vector<u8>,
         pk_blob_id: vector<u8>,
         wasm_blob_id: vector<u8>,
+        circuit_source_blob_id: vector<u8>,
         seal_policy_id: ID,
         proof_validity_epochs: u64,
         nullifier_policy: u8,
@@ -135,6 +141,7 @@ module abyssal::abyssal_registry {
             wasm_double_hash,
             pk_blob_id,
             wasm_blob_id,
+            circuit_source_blob_id,
             seal_policy_id,
             registered_enclave_pubkeys: vector::empty(),
             proof_validity_epochs,
@@ -150,6 +157,7 @@ module abyssal::abyssal_registry {
             seal_policy_id,
             pk_blob_id,
             wasm_blob_id,
+            circuit_source_blob_id,
         });
 
         transfer::share_object(config);
@@ -257,9 +265,10 @@ module abyssal::abyssal_registry {
         let expiry_epoch_bytes = abyssal_types::extract_bytes(&public_inputs_bytes, 96, 32);
         let expiry_epoch = abyssal_types::le_bytes_to_u64(expiry_epoch_bytes);
 
-        // 6. Verify vault_id_hash = Poseidon(vault_id_as_u256)
+        // 6. Verify vault_id_hash = Poseidon(vault_id_as_field_element)
+        // Reduce vault_id modulo BN254 scalar field order (Circom does this implicitly)
         let vault_id_bytes = object::id_to_bytes(&object::id(vault));
-        let vault_id_u256 = abyssal_types::bytes32_to_u256(vault_id_bytes);
+        let vault_id_u256 = abyssal_types::bytes32_to_u256(vault_id_bytes) % BN254_R;
         let expected_hash_u256 = poseidon::poseidon_bn254(&vector[vault_id_u256]);
         let expected_hash = abyssal_types::u256_to_bytes32(expected_hash_u256);
         assert!(vault_id_hash == expected_hash, EInvalidVaultIdHash);
@@ -363,6 +372,10 @@ module abyssal::abyssal_registry {
     public fun vault_owner(vault: &VaultConfig): address { vault.owner }
     public fun vault_paused(vault: &VaultConfig): bool { vault.paused }
     public fun vault_wasm_double_hash(vault: &VaultConfig): vector<u8> { vault.wasm_double_hash }
+    public fun vault_seal_policy_id(vault: &VaultConfig): ID { vault.seal_policy_id }
+    public fun is_enclave_registered(vault: &VaultConfig, pubkey: &vector<u8>): bool {
+        vector::contains(&vault.registered_enclave_pubkeys, pubkey)
+    }
     public fun proof_vault_id(proof: &VaultProof): ID { proof.vault_id }
     public fun proof_nullifier(proof: &VaultProof): vector<u8> { proof.nullifier }
     public fun proof_result_commitment(proof: &VaultProof): vector<u8> { proof.result_commitment }

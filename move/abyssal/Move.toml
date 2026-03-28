@@ -1,0 +1,9 @@
+[package]
+name = "abyssal"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+
+[addresses]
+abyssal = "0x56b8bc8dc17d06631172831794b3111dbda84c10e99d2f92d69877fe02c9b777"

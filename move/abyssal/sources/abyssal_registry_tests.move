@@ -36,6 +36,7 @@ module abyssal::abyssal_registry_tests {
             DUMMY_WASM_DOUBLE_HASH,
             DUMMY_PK_BLOB,
             DUMMY_WASM_BLOB,
+            x"abcd", // dummy circuit_source_blob_id
             object::id_from_address(@0x999), // dummy seal policy ID
             28, // ~28 days validity
             0,  // one-time nullifier

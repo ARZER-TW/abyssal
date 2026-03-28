@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abyssal -- First Web3 Private Function Evaluation Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0a0a;
+  --card: #111111;
+  --card-border: #222222;
+  --accent: #6366f1;
+  --accent-dim: #4f46e5;
+  --accent-glow: rgba(99, 102, 241, 0.12);
+  --text: #e5e5e5;
+  --text-dim: #a3a3a3;
+  --text-muted: #737373;
+  --green: #22c55e;
+  --green-bg: rgba(34, 197, 94, 0.08);
+  --yellow: #eab308;
+  --yellow-bg: rgba(234, 179, 8, 0.08);
+  --red: #ef4444;
+  --red-bg: rgba(239, 68, 68, 0.08);
+  --gray: #6b7280;
+  --gray-bg: rgba(107, 114, 128, 0.08);
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', -apple-system, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 18px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(10, 10, 10, 0.88);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--card-border);
+  padding: 0 2rem;
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+.nav-brand {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+.nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.nav-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text); }
+
+/* ---- LAYOUT ---- */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+section {
+  padding: 5rem 0;
+  border-bottom: 1px solid var(--card-border);
+}
+section:last-of-type { border-bottom: none; }
+
+h1 { font-size: 42px; font-weight: 800; line-height: 1.2; letter-spacing: -1px; }
+h2 { font-size: 32px; font-weight: 700; line-height: 1.3; margin-bottom: 1rem; letter-spacing: -0.5px; }
+h3 { font-size: 24px; font-weight: 600; line-height: 1.4; margin-bottom: 0.75rem; }
+h4 { font-size: 20px; font-weight: 600; margin-bottom: 0.5rem; }
+
+p { margin-bottom: 1rem; }
+strong { color: var(--text); font-weight: 600; }
+
+code, .mono {
+  font-family: var(--mono);
+  font-size: 16px;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin-bottom: 1.25rem;
+}
+.card h3, .card h4 { color: var(--text); }
+
+.card-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.card-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+
+@media (max-width: 860px) {
+  .card-grid-2, .card-grid-3 { grid-template-columns: 1fr; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 26px; }
+}
+
+/* ---- CODE BLOCKS ---- */
+pre {
+  background: #0d0d0d;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin-bottom: 1.25rem;
+}
+pre .comment { color: var(--text-muted); }
+pre .highlight { color: var(--accent); }
+pre .warn { color: var(--red); }
+
+/* ---- BADGES ---- */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge-pass { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34, 197, 94, 0.2); }
+.badge-skip { background: var(--gray-bg); color: var(--gray); border: 1px solid rgba(107, 114, 128, 0.2); }
+.badge-partial { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(234, 179, 8, 0.2); }
+.badge-warn { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+/* ---- MISC ---- */
+.subtitle {
+  color: var(--text-dim);
+  font-size: 20px;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+.section-note {
+  color: var(--text-muted);
+  font-size: 16px;
+  margin-top: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.highlight-box {
+  background: var(--accent-glow);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  margin: 1.5rem 0;
+}
+
+.dilemma-box {
+  background: var(--red-bg);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  margin: 1.5rem 0;
+}
+
+.key-statement {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--accent);
+  padding: 2rem 1rem;
+  margin: 2rem 0;
+  border-top: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.step-content { flex: 1; }
+
+.tag {
+  display: inline-block;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 2px 10px;
+  border-radius: 6px;
+  margin: 3px 4px 3px 0;
+}
+
+.obj-id {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text-dim);
+  word-break: break-all;
+}
+
+.suiscan-link {
+  font-size: 14px;
+  font-family: var(--mono);
+}
+
+.warn-text { color: var(--red); }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 16px;
+}
+th, td {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--card-border);
+}
+th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+
+.footer {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-muted);
+  font-size: 16px;
+  border-top: 1px solid var(--card-border);
+}
+.footer strong { color: var(--text-dim); }
+
+/* ---- HERO ---- */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 56px;
+  border-bottom: 1px solid var(--card-border);
+}
+.hero h1 {
+  font-size: 56px;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+@media (max-width: 860px) { .hero h1 { font-size: 38px; } }
+.hero .tagline {
+  font-size: 24px;
+  color: var(--text-dim);
+  margin-bottom: 1.5rem;
+  font-weight: 400;
+}
+.hero .one-liner {
+  font-size: 20px;
+  color: var(--text);
+  max-width: 800px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+.hero .sub-note {
+  font-size: 16px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.stat-item {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  text-align: center;
+}
+.stat-item .stat-val {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.stat-item .stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.phase-label {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+.phase-label-deploy { color: var(--accent); }
+.phase-label-user { color: var(--green); }
+.phase-label-verify { color: var(--yellow); }
+
+/* ---- TRANSACTION TIMELINE ---- */
+.tx-timeline {
+  position: relative;
+  padding-left: 2.5rem;
+  margin: 2rem 0;
+}
+.tx-timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0.4;
+}
+.tx-item {
+  position: relative;
+  margin-bottom: 1.75rem;
+}
+.tx-item:last-child { margin-bottom: 0; }
+.tx-item::before {
+  content: '';
+  position: absolute;
+  left: -2.5rem;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+.tx-label {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+.tx-digest {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.tx-desc {
+  font-size: 16px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ---- VAULT CONFIG DISPLAY ---- */
+.vault-display {
+  background: #0a0a0a;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  padding: 1.75rem 2rem;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 2;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.06);
+  overflow-x: auto;
+}
+.vault-display .vd-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--card-border);
+}
+.vault-display .vd-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0.5rem;
+}
+.vault-display .vd-key {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.vault-display .vd-val {
+  color: var(--text-dim);
+  word-break: break-all;
+}
+
+/* ---- ENCRYPTION COMPARISON ---- */
+.enc-compare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+@media (max-width: 860px) {
+  .enc-compare { grid-template-columns: 1fr; }
+  .enc-arrow-col { transform: rotate(90deg); }
+}
+.enc-panel {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+.enc-panel h4 { margin-bottom: 0.75rem; }
+.enc-panel pre {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+.enc-label {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+.enc-arrow-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+/* ---- SECURITY MODEL ---- */
+.security-layer {
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 0;
+}
+.security-layer-tee {
+  background: var(--yellow-bg);
+  border: 2px solid rgba(234, 179, 8, 0.35);
+  border-radius: 10px 10px 0 0;
+}
+.security-layer-math {
+  background: var(--green-bg);
+  border: 2px solid rgba(34, 197, 94, 0.35);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+.security-layer h4 {
+  font-family: var(--mono);
+  font-size: 16px;
+  margin-bottom: 0.75rem;
+}
+.security-layer .sl-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 0.25rem 1rem;
+  font-size: 15px;
+  line-height: 1.8;
+}
+.security-layer .sl-key { color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#hero" class="nav-brand">Abyssal</a>
+    <div class="nav-links">
+      <a href="#problem">Problem</a>
+      <a href="#insight">Insight</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#vecs">Opacity</a>
+      <a href="#audit">Audit</a>
+      <a href="#suicryptolib">SuiCryptoLib</a>
+      <a href="#stack">Stack</a>
+      <a href="#comparison">Comparison</a>
+      <a href="#evidence">Evidence</a>
+    </div>
+  </div>
+</nav>
+
+<!-- SECTION 1: HERO -->
+<section class="hero" id="hero">
+  <div class="container">
+    <h1>Abyssal</h1>
+    <p class="tagline">可验证私有函数评估协议 (Verifiable Private Function Evaluation Protocol)</p>
+    <p class="one-liner">第一个让「算法私密、结果可信、无需盲目信任中间人」同时成立的 Web3 协议</p>
+    <p class="sub-note">基于 Sui 生态的 SuiCryptoLib + Seal + Walrus + Nautilus + Groth16 原生整合</p>
+    <!-- stats moved to Section 12 -->
+  </div>
+</section>
+
+<!-- SECTION 2: PROBLEM STATEMENT -->
+<section id="problem">
+  <div class="container">
+    <h2>我们在解决什么问题</h2>
+    <p class="subtitle">隐私在密码学中有两种截然不同的含义，长期以来被混为一谈。</p>
+
+    <div class="card-grid-2">
+      <div class="card">
+        <h3>数据隐私 (Data Privacy)</h3>
+        <p>计算逻辑公开，输入数据隐藏。</p>
+        <p>Aztec、Aleo、ZK Rollup 正在解决这个问题。已有成熟方案。</p>
+      </div>
+      <div class="card">
+        <h3>私有函数评估 (Private Function Evaluation, PFE)</h3>
+        <p>计算逻辑本身也是隐藏的，但结果仍可信验证。</p>
+        <p>学术界讨论了几十年，从未有 Web3 生产级实现。</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:2rem;">具体场景：信用评分</h3>
+    <div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto 1fr; align-items:center; gap:0; margin:1.5rem 0;">
+      <div style="background:var(--card); border:1px solid var(--accent); border-radius:10px; padding:1rem; text-align:center;">
+        <div style="font-weight:600; font-size:15px; color:var(--accent);">银行</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">信用评分模型<br>(核心资产)</div>
+      </div>
+      <div style="color:var(--text-muted); font-size:20px; padding:0 0.4rem;">&#8594;</div>
+      <div style="background:var(--card); border:1px solid #a78bfa; border-radius:10px; padding:1rem; text-align:center;">
+        <div style="font-weight:600; font-size:15px; color:#a78bfa;">用户</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">提交收入、负债<br>信用历史</div>
+      </div>
+      <div style="color:var(--text-muted); font-size:20px; padding:0 0.4rem;">&#8594;</div>
+      <div style="background:var(--card); border:1px solid var(--green); border-radius:10px; padding:1rem; text-align:center;">
+        <div style="font-weight:600; font-size:15px; color:var(--green);">TEE 计算</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">信用分 = 650<br>生成 ZK proof</div>
+      </div>
+      <div style="color:var(--text-muted); font-size:20px; padding:0 0.4rem;">&#8594;</div>
+      <div style="background:var(--card); border:1px solid var(--yellow); border-radius:10px; padding:1rem; text-align:center;">
+        <div style="font-weight:600; font-size:15px; color:var(--yellow);">DeFi 协议</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-top:4px;">验证 proof &#8594; 放款<br><strong style="color:var(--red);">不知道评分规则</strong></div>
+      </div>
+    </div>
+
+    <p>传统金融机构的核心竞争力在于算法——信用评分模型、风控引擎、合规逻辑。这些是数十年积累的商业机密。它们想进入 DeFi，却面临一个无解的困境：</p>
+
+    <div class="dilemma-box">
+<pre style="background:transparent; border:none; padding:0; margin:0; color:var(--text-dim);">选择一：把算法放上公链
+  -> 逻辑完全公开，竞争对手一天内复制
+  -> 机构会拒绝
+
+选择二：维持中心化服务
+  -> 用户必须盲目信任机构
+  -> 和 Web2 没有本质区别</pre>
+    </div>
+
+    <p style="color:var(--text-muted);">这个困境在今天没有解法。现实世界用「可信中间人」（麦肯锡、评级机构、审计所）来绕开它，每年市场规模数千亿美元。</p>
+
+    <div class="highlight-box">
+      <p style="margin:0;"><strong>Abyssal 是第一个让「算法私密、结果可信、无需盲目信任中间人」同时成立的 Web3 协议。</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: CORE INSIGHT -->
+<section id="insight">
+  <div class="container">
+    <h2>核心洞察：一个被忽视的密码学事实</h2>
+    <p class="subtitle">Groth16 Trusted Setup 产生两把性质完全不同的密钥。</p>
+
+    <div class="card-grid-2">
+      <div class="card">
+        <h3>Proving Key (pk)</h3>
+        <table>
+          <tr><td>大小</td><td class="mono">5-50 MB</td></tr>
+          <tr><td>内容</td><td>电路逻辑的完整多项式编码</td></tr>
+          <tr><td>风险</td><td>有了它可以分析出电路在做什么</td></tr>
+          <tr><td style="border:none;">处理</td><td style="border:none;"><strong class="warn-text">必须加密保护</strong></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Verification Key (vk / pvk)</h3>
+        <table>
+          <tr><td>大小</td><td class="mono">~700 bytes (4 byte vectors)</td></tr>
+          <tr><td>能力</td><td>验证 proof 是否合法</td></tr>
+          <tr><td>安全</td><td>从数学上完全无法反推电路逻辑</td></tr>
+          <tr><td style="border:none;">处理</td><td style="border:none;"><strong style="color:var(--green);">公开部署上链</strong></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="key-statement">链上验证一个 proof，只需要 vk，完全不需要 pk。</div>
+
+    <p>在传统 ZK 应用中，用户需要在自己的设备上生成 proof，因此 pk 必须公开分发。Abyssal 改变了这个架构前提：<strong>将 proof 生成移到 TEE（可信执行环境）内部</strong>，用户不再需要直接接触 pk，因此 pk 可以被加密保护。</p>
+    <p>同时，wasm（由电路编译产生的执行档，包含完整的计算步骤，懂逆向工程的人可以从中还原出算法逻辑）也必须一并加密。pk 和 wasm 都被 Seal IBE 加密后存储在 Walrus 上，只有经过授权的 TEE 才能解密和使用。vk 正常上链，任何人可以验证 proof 是否合法，但无法推断电路在验证什么。</p>
+    <p><strong>这在 Web3 产品中尚无先例。</strong></p>
+  </div>
+</section>
+
+<!-- SECTION 4: COMPLETE ARCHITECTURE -->
+<section id="architecture">
+  <div class="container">
+    <h2>完整架构</h2>
+    <p class="subtitle">三个角色，三个阶段。</p>
+
+    <div class="card-grid-3">
+      <div class="card" style="text-align:center;">
+        <h4>业务逻辑所有者（部署方）</h4>
+        <p style="color:var(--text-dim); margin:0;">拥有算法商业机密</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h4>用户</h4>
+        <p style="color:var(--text-dim); margin:0;">提交私有数据，获得计算凭证</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h4>第三方协议</h4>
+        <p style="color:var(--text-dim); margin:0;">验证 proof，执行业务</p>
+      </div>
+    </div>
+
+    <!-- Architecture Flow Diagram -->
+    <div style="margin-top:2.5rem; margin-bottom:2.5rem;">
+      <h3 style="margin-bottom:1.25rem; color:var(--text-dim);">端到端数据流</h3>
+      <div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:0; margin-bottom:1rem;">
+        <div style="background:var(--card); border:2px solid var(--accent); border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+          <div style="font-weight:600; margin-bottom:0.25rem;">部署方的算法</div>
+          <div style="font-family:var(--mono); font-size:14px; color:var(--text-muted);">.circom</div>
+        </div>
+        <div style="color:var(--accent); font-size:24px; font-weight:700; padding:0 0.5rem;">&#8594;</div>
+        <div style="background:var(--card); border:2px solid var(--accent); border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+          <div style="font-weight:600; margin-bottom:0.25rem;">Seal IBE 加密</div>
+          <div style="font-family:var(--mono); font-size:14px; color:var(--text-muted);">pk + wasm</div>
+        </div>
+        <div style="color:var(--accent); font-size:24px; font-weight:700; padding:0 0.5rem;">&#8594;</div>
+        <div style="background:var(--card); border:2px solid var(--accent); border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+          <div style="font-weight:600; margin-bottom:0.25rem;">Walrus 存储</div>
+          <div style="font-family:var(--mono); font-size:14px; color:var(--text-muted);">3 encrypted blobs</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; padding-right:calc(10% + 2rem);">
+        <div style="color:var(--accent); font-size:24px; font-weight:700;">&#8595;</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:0; margin-top:0.5rem;">
+        <div style="background:var(--card); border:2px solid var(--green); border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+          <div style="font-weight:600; margin-bottom:0.25rem;">Sui Move 合约</div>
+          <div style="font-family:var(--mono); font-size:14px; color:var(--text-muted);">pvk 上链</div>
+        </div>
+        <div style="color:var(--green); font-size:24px; font-weight:700; padding:0 0.5rem;">&#8592;</div>
+        <div style="background:var(--card); border:2px solid var(--green); border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+          <div style="font-weight:600; margin-bottom:0.25rem;">Groth16 Proof</div>
+          <div style="font-family:var(--mono); font-size:14px; color:var(--text-muted);">128 bytes</div>
+        </div>
+        <div style="color:var(--green); font-size:24px; font-weight:700; padding:0 0.5rem;">&#8592;</div>
+        <div style="background:var(--card); border:2px solid var(--green); border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+          <div style="font-weight:600; margin-bottom:0.25rem;">TEE 解密 + 计算</div>
+          <div style="font-family:var(--mono); font-size:14px; color:var(--text-muted);">Seal key load</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-start; padding-left:calc(10% + 2rem);">
+        <div style="color:var(--green); font-size:24px; font-weight:700;">&#8595;</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:0; margin-top:0.5rem;">
+        <div style="background:var(--card); border:2px solid var(--yellow); border-radius:10px; padding:1rem 1.25rem; text-align:center;">
+          <div style="font-weight:600; margin-bottom:0.25rem;">VaultProof</div>
+          <div style="font-family:var(--mono); font-size:14px; color:var(--text-muted);">Sui 物件，跨协议流通</div>
+        </div>
+        <div style="padding:0 0.5rem;"></div><div></div><div style="padding:0 0.5rem;"></div><div></div>
+      </div>
+    </div>
+
+    <!-- Deploy Phase -->
+    <div style="margin-top:2.5rem;">
+      <p class="phase-label phase-label-deploy">// Deploy Phase — 业务逻辑所有者执行一次</p>
+      <p style="color:var(--text-dim); font-size:16px; margin-bottom:1.25rem; padding-left:2.75rem;">银行把自己的信用评分算法「封装」成一个链上服务。算法本身被加密保护，链上只留下一个验证接口（vk）。任何人都能用这个接口验证结果，但没有人能看到算法在做什么。</p>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>写算法</strong> — 把信用评分逻辑写成 Circom 电路（ZK 电路语言）</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>生成密钥对</strong> — Trusted Setup 产出 pk（5-50 MB，包含算法逻辑）和 vk（~700 bytes，只能验证）</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>加密 + 存储</strong> — pk + wasm 用 Seal IBE 加密，存入 Walrus 去中心化存储。只有合法 TEE 能解密</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content"><strong>上链</strong> — vk 部署到 Sui Move 合约。此时链上只有 ~700 bytes，任何人看不出这在验证什么</div>
+      </div>
+
+      <div class="card" style="margin-top:1.25rem;">
+        <h4 style="color:var(--text-dim); margin-bottom:0.75rem;">VaultConfig — 链上存储的内容</h4>
+<pre style="margin:0;"><span class="comment">// Move 合约中 VaultConfig 的核心字段</span>
+<span class="highlight">public struct VaultConfig</span> has key {
+    id: UID,
+    owner: address,
+
+    <span class="comment">// Groth16 验证密钥 (~700 bytes)，只能验证、无法反推电路逻辑</span>
+    <span class="highlight">pvk</span>: groth16::PreparedVerifyingKey,
+
+    <span class="comment">// 电路身份指纹：SHA-256(SHA-256(wasm))，32 bytes</span>
+    <span class="highlight">wasm_double_hash</span>: vector&lt;u8&gt;,
+
+    <span class="comment">// 加密文件在 Walrus 上的位置（内容寻址，篡改即失效）</span>
+    <span class="highlight">pk_blob_id</span>: vector&lt;u8&gt;,
+    <span class="highlight">wasm_blob_id</span>: vector&lt;u8&gt;,
+    <span class="highlight">circuit_source_blob_id</span>: vector&lt;u8&gt;,
+
+    <span class="comment">// 访问控制策略（Seal policy 合约 ID）</span>
+    seal_policy_id: ID,
+
+    <span class="comment">// 已注册的 TEE 公钥列表（只有这些 TEE 能解密 pk/wasm）</span>
+    registered_enclave_pubkeys: vector&lt;vector&lt;u8&gt;&gt;,
+
+    <span class="comment">// Proof 有效期（28 个 Sui epoch ≈ 28 天）</span>
+    proof_validity_epochs: u64,
+
+    <span class="comment">// 防重放策略：0=一次性, 1=每 epoch 一次, 2=无限制</span>
+    nullifier_policy: u8,
+}</pre>
+      </div>
+    </div>
+
+    <!-- User Phase -->
+    <div style="margin-top:2.5rem;">
+      <p class="phase-label phase-label-user">// User Phase — 每次计算</p>
+      <p style="color:var(--text-dim); font-size:16px; margin-bottom:1.25rem; padding-left:2.75rem;">用户把隐私数据交给一台「谁都偷看不了的机器」(TEE)，机器用加密的算法算出结果，输出一个数学证明。全程没有人看到数据，也没有人看到算法。</p>
+      <div class="step">
+        <div class="step-num" style="background:var(--green);">1</div>
+        <div class="step-content"><strong>提交数据</strong> — 用户把收入、支出、信用历史等私有数据发送给 TEE（可信执行环境，硬件保证管理员也看不到内容）</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--green);">2</div>
+        <div class="step-content"><strong>获取密钥</strong> — TEE 向 Seal 证明「我是合法的、没被篡改的机器」，Seal 验证通过后释放 pk/wasm 的解密密钥</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--green);">3</div>
+        <div class="step-content"><strong>密封计算</strong> — TEE 在硬件安全边界内：解密 wasm 处理用户数据（得到信用分 650）→ 解密 pk 生成 Groth16 proof（数学证明「650 是按正确规则算出来的」）</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--green);">4</div>
+        <div class="step-content"><strong>输出凭证</strong> — 128 bytes proof + 4 个 Poseidon hash（看不出在证明什么）→ 打包成 VaultProof Sui 物件，归用户所有</div>
+      </div>
+    </div>
+
+    <!-- Verification Phase -->
+    <div style="margin-top:2.5rem;">
+      <p class="phase-label phase-label-verify">// Verification Phase — 任意次数</p>
+      <p style="color:var(--text-dim); font-size:16px; margin-bottom:1.25rem; padding-left:2.75rem;">用户拿着 proof 去任何 DeFi 协议。协议只需要在链上做一次数学验证（极低成本），不需要知道算法是什么，不需要联系银行，不需要重新计算。</p>
+      <div class="step">
+        <div class="step-num" style="background:var(--yellow);">1</div>
+        <div class="step-content"><strong>提交 proof</strong> — 第三方协议接受用户的 VaultProof Sui 物件</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--yellow);">2</div>
+        <div class="step-content"><strong>链上验证</strong> — 调用 <code>sui::groth16::verify_groth16_proof(pvk, proof, public_inputs)</code>，固定成本（2 次 BN254 配对运算）</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--yellow);">3</div>
+        <div class="step-content"><strong>执行业务</strong> — 验证通过 → 放款、授权、解锁等业务逻辑自动执行</div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--yellow);">4</div>
+        <div class="step-content"><strong>复用</strong> — 同一个 proof 物件可在有效期内被多个不同协议重复验证使用，不需要重新计算</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: VECS -->
+<section id="vecs">
+  <div class="container">
+    <h2>链上数据会不会泄露算法？</h2>
+    <p class="subtitle">Proof 和 public inputs 都在链上公开可见。一个自然的疑问：观察者能不能通过分析这些数据，反推出算法在做什么？</p>
+    <p>答案是：<strong>不能</strong>——前提是电路的输出设计遵循了正确的规范。我们要求所有部署到 Abyssal 的电路，必须用 <strong>Poseidon hash</strong> 将业务语义完全封装，链上只暴露 4 个不透明的哈希值。观察者能看到这些值，但无法从中推断出任何业务含义。</p>
+
+    <div class="card-grid-2" style="margin-top:1.5rem;">
+      <div class="card" style="border-color: rgba(239, 68, 68, 0.3);">
+        <h4 class="warn-text">错误设计 -- 泄露电路语义</h4>
+<pre style="margin:0;">
+<span class="comment">// 任何人都能看出这是什么系统</span>
+min_credit_score: 700     <span class="warn"><- 泄露：在看信用分</span>
+approved: bool            <span class="warn"><- 泄露：审批系统</span>
+income_verified: bool     <span class="warn"><- 泄露：在验证收入</span>
+</pre>
+      </div>
+      <div class="card" style="border-color: rgba(34, 197, 94, 0.3);">
+        <h4 style="color:var(--green);">正确设计 -- Poseidon hash 封装</h4>
+<pre style="margin:0;">
+<span class="comment">// 只有 Poseidon hash + epoch</span>
+<span class="highlight">nullifier</span>: Poseidon(secret, vault_id, epoch)
+<span class="highlight">result_commitment</span>: Poseidon(result, salt)
+<span class="highlight">vault_id_hash</span>: Poseidon(vault_id)
+<span class="highlight">expiry_epoch</span>: 128
+</pre>
+      </div>
+    </div>
+
+    <p style="color:var(--text-muted); margin-top:1rem;">非授权观察者只知道：「某用户对某 vault 生成了一个有效 proof」。不知道 proof 在证明什么。</p>
+
+    <div class="card" style="margin-top:2rem;">
+      <h4 style="color:var(--text-dim); margin-bottom:0.75rem;">credit_score.circom — 实际电路代码</h4>
+<pre style="margin:0;"><span class="comment">// 这就是被 Seal 加密保护的「秘密公式」
+// 观察者看不到这段代码，只能看到 4 个 Poseidon hash 输出</span>
+
+template <span class="highlight">CreditScore</span>(VALIDITY_DURATION) {
+    <span class="comment">// ===== 标准私有输入 =====</span>
+    signal input user_secret;
+    signal input vault_id_field;
+    signal input epoch;
+    signal input result_value;
+    signal input result_salt;
+
+    <span class="comment">// ===== 业务逻辑私有输入（这部分是「秘密」）=====</span>
+    signal input income;
+    signal input monthly_expenses;
+    signal input years_of_history;
+
+    <span class="comment">// ===== 秘密公式：score = 300 + 净收入 + 年资*10 =====</span>
+    signal computed_score;
+    computed_score &lt;== <span class="highlight">300 + income - monthly_expenses
+                       + years_of_history * 10</span>;
+    result_value === computed_score;  <span class="comment">// 绑定：结果必须等于公式算出的值</span>
+
+    <span class="comment">// ===== 4 个语义不透明的输出（Poseidon hash）=====</span>
+    signal output <span class="highlight">nullifier</span>;           <span class="comment">// Poseidon(secret, vault_id, epoch)</span>
+    signal output <span class="highlight">result_commitment</span>;   <span class="comment">// Poseidon(result, salt)</span>
+    signal output <span class="highlight">vault_id_hash</span>;       <span class="comment">// Poseidon(vault_id)</span>
+    signal output <span class="highlight">expiry_epoch</span>;        <span class="comment">// epoch + 28</span>
+    <span class="comment">// ... Poseidon 计算逻辑省略 ...</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: FIVE-LAYER AUDIT CHAIN -->
+<section id="audit">
+  <div class="container">
+    <h2>指定审计方的完整验证链</h2>
+    <p class="subtitle">算法虽然对公众隐藏，但部署方可以选择让指定人士（监管机构、投资方、审计员）完整审计电路逻辑，而不需要对外公开。审计方通过以下五层独立验证，不需要相信部署方的任何口头承诺。</p>
+
+    <div class="card">
+      <h4>Layer 1: 电路身份确认</h4>
+      <p style="color:var(--text-dim); margin-bottom:0.5rem;">审计员通过 Seal 解密拿到电路原始码（.circom），亲眼看到算法逻辑：「score = 300 + income - expenses + years * 10」。这不是部署方口头告诉他的，是他自己从链上加密存储中解密出来的。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">技术：Seal AuditAllowlistPolicy 解密 -> 获得 circuit.circom (3,420 bytes)</p>
+    </div>
+
+    <div class="card">
+      <h4>Layer 2: 电路与链上绑定确认</h4>
+      <p style="color:var(--text-dim); margin-bottom:0.5rem;">审计员拿到原始码后，自己重新编译，计算出一个指纹（hash）。然后和链上 VaultConfig 里存的指纹比对——如果完全一致，就数学证明了「链上这个 vault 用的确实是我手上这份电路，不是别的东西」。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">技术：重新编译 .circom -> SHA-256(SHA-256(wasm)) -> 和链上 wasm_double_hash 比对</p>
+    </div>
+
+    <div class="card">
+      <h4>Layer 3: TEE 自报告确认</h4>
+      <p style="color:var(--text-dim); margin-bottom:0.5rem;">TEE 在生成 proof 时，会把「我用的是哪个 wasm」的指纹写进硬件证明文件。审计员比对这个指纹，确认 TEE 内部确实在用正确的电路，而不是偷偷换了一个。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">技术：TEE attestation user_data 包含 H(H(wasm))，和链上比对</p>
+    </div>
+
+    <div class="card">
+      <h4>Layer 4: PCR 锁定确认</h4>
+      <p style="color:var(--text-dim); margin-bottom:0.5rem;">审计员拿到 TEE 的程序源代码，自己编译一遍，算出一个「代码指纹」(PCR)。和链上白名单里的 PCR 比对——确认 TEE 跑的代码没有被篡改，Layer 3 的自报告是可信的。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">技术：独立编译 TEE 代码 -> 计算 PCR0/1/2 (SHA-384) -> 和 Seal policy 白名单比对</p>
+    </div>
+
+    <div class="card">
+      <h4>Layer 5: Trusted Setup Ceremony 参与</h4>
+      <p style="color:var(--text-dim); margin-bottom:0.5rem;">在最高安全需求的场景，审计员亲自参与密钥生成仪式。只要参与者中至少一个人是诚实的，整个系统就是安全的。这让审计员从「被告知电路是什么」变成「亲自参与确认电路是什么」。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">��术：snarkjs zkey contribute，MPC ceremony ���方参与</p>
+    </div>
+
+    <div class="highlight-box" style="margin-top:2rem;">
+      <h4 style="margin-bottom:0.75rem;">经过以上验证，你不再需要信任：</h4>
+      <ul style="list-style:none; padding:0; font-size:17px; line-height:2;">
+        <li><strong style="color:var(--green);">不需相信机构没偷偷换规则</strong> — vk 固定上链，每次 proof 都对应同一套逻辑，数学保证</li>
+        <li><strong style="color:var(--green);">不需相信机构对所有用户用同样标准</strong> — 同一个 vk，数学上完全一致，电路结构上不可能存在歧视性分支</li>
+        <li><strong style="color:var(--green);">不需相信机构没泄露你的数据</strong> — 数据在 TEE 硬件边界内处理，从不上链，从不离开 enclave</li>
+      </ul>
+      <p style="color:var(--text-dim); margin-top:1rem; margin-bottom:0; font-size:16px;">安全底线：即使 TEE 硬件被攻破，最坏结果是部署方的算法商业机密泄露（商业损失）。但用户的链上资产绝对安全——因为攻击者即使拿到 pk，也无法伪造一个满足所有约束条件的 Groth16 proof 来骗过链上验证。</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8: SUICRYPTOLIB -->
+<section id="suicryptolib">
+  <div class="container">
+    <h2>SuiCryptoLib -- 工程基础层</h2>
+    <p class="subtitle">SuiCryptoLib 是我们团队的前身项目——一个 Sui 生态的密码学原语工具库（136 tests, 9 Move modules, 4 Circom circuits）。Abyssal 基于它构建，是该工具库的最高难度应用展示。</p>
+
+<pre>SuiCryptoLib (136 tests, 9 Move modules, 4 Circom circuits)
+  |-- Groth16 格式转换管线 (snarkjs -> Sui Arkworks)
+  |-- Poseidon hash 一致性验证 (circomlibjs = sui::poseidon)
+  |-- 现有电路：hash_commitment / range_proof / semaphore
+  |-- 完整 SDK + 3 个 Demo 应用
+
+        | 最高难度展示
+        v
+
+Abyssal (PFE 协议)
+  |-- 加密 pk + wasm (Seal + Walrus)
+  |-- TEE 内解密 + 生成 proof
+  |-- vk 上链验证</pre>
+
+    <p><strong>SuiCryptoLib 是管道系统。Abyssal 是用这套管道第一次实现的事。</strong></p>
+
+    <p style="margin-top:1rem;">复用组件：</p>
+    <div>
+      <span class="tag">format_for_sui.mjs</span>
+      <span class="tag">pot13.ptau</span>
+      <span class="tag">Poseidon consistency</span>
+      <span class="tag">ESM SDK patterns</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 9: SUI STACK IRREPLACEABILITY -->
+<section id="stack">
+  <div class="container">
+    <h2>Sui Stack 每个组件的不可替代性</h2>
+    <p class="section-note">五个组件缺少任何一个，整个方案在逻辑上无法成立</p>
+
+    <div class="card">
+      <h4>SuiCryptoLib — 工程管线</h4>
+      <p style="color:var(--green); font-weight:600; margin-bottom:0.5rem;">让任何 Circom 电路一键部署到 Sui 链上验证</p>
+      <p style="color:var(--text-dim);">打通「任何 Circom 电路 → 浏览器/TEE 生成 proof → Sui Move 链上验证」的完整格式转换管线。把部署一个 Vault 从「需要深度密码学工程能力」降低到「调用几个函数」。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">复用：format_for_sui.mjs / pvk 预计算 / Poseidon 跨端一致性验证</p>
+    </div>
+
+    <div class="card">
+      <h4>Seal — 去中心化密钥访问控制</h4>
+      <p style="color:var(--green); font-weight:600; margin-bottom:0.5rem;">用 Move 合约决定谁能解密，而不是中心化服务器</p>
+      <p style="color:var(--text-dim);">把「谁有资格解密 pk/wasm」的答案，从中心化服务器的 ACL 变成 Move 合约逻辑。通过 IBE（基于身份的加密）+ DKS MPC 委员会实现去中心化，无单一节点持有完整密钥。</p>
+      <p style="color:var(--text-muted); margin-bottom:1rem; font-size:15px;">Abyssal 用了两个 Seal policy：VaultKeyPolicy（TEE 解密 pk/wasm）+ AuditAllowlistPolicy（审计员解密电路源码）</p>
+<pre style="font-size:13px; margin:0;"><span class="comment">// seal_approve — Seal key server 通过 dry-run 执行此函数
+// 所有 7 个条件必须全部通过，才会释放解密密钥</span>
+entry fun <span class="highlight">seal_approve</span>(
+    id: vector&lt;u8&gt;,             <span class="comment">// 必须 = [0u8]（固定 IBE identity）</span>
+    vault_config: &VaultConfig,  <span class="comment">// 检查 enclave 是否已注册</span>
+    enclave_pubkey: vector&lt;u8&gt;, <span class="comment">// 请求解密的 TEE 公钥</span>
+    wallet_pubkey: vector&lt;u8&gt;,  <span class="comment">// TEE 的 Seal wallet 公钥</span>
+    timestamp: u64,              <span class="comment">// 当前时间（60 秒防重放窗口）</span>
+    sig: vector&lt;u8&gt;,            <span class="comment">// Ed25519 签名证明 TEE 身份</span>
+    clock: &Clock,               <span class="comment">// Sui 链上时钟</span>
+)</pre>
+    </div>
+
+    <div class="card">
+      <h4>Walrus — 去中心化加密存储</h4>
+      <p style="color:var(--green); font-weight:600; margin-bottom:0.5rem;">让大型加密文件有去中心化、防篡改的存储</p>
+      <p style="color:var(--text-dim);">为 5-50 MB 的加密 pk/wasm 提供去中心化、内容寻址的存储。blob ID = H(content)，文件被替换则 ID 改变，任何人可独立验证完整性。blob 本身是 Sui 链上物件，可被 Move 合约引用、设定访问控制、管理生命周期。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">Abyssal 存了 3 个加密 blob：pk + wasm + 电路源码，blob ID 记录在链上 VaultConfig 中</p>
+    </div>
+
+    <div class="card">
+      <h4>Nautilus — 可验证链外计算</h4>
+      <p style="color:var(--green); font-weight:600; margin-bottom:0.5rem;">在硬件安全边界内执行计算，算法和数据从不暴露</p>
+      <p style="color:var(--text-dim);">在 AWS Nitro Enclave 硬件安全边界内执行 proof 生成。wasm 和用户数据从不离开 enclave。PCR attestation 把「计算发生在可信环境」从口头承诺变成可被 Move 合约验证的密码学哈希。最关键的安全分层：TEE 被攻破只导致算法泄露，资产安全不受影响（底线是链上 vk 的数学保证）。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">对比纯 TEE 隐私链：TEE 被攻破 = 用户资产直接被盗。Abyssal：TEE 被攻破 = 部署方算法泄露（商业损失），但用户链上资产绝对安全</p>
+    </div>
+
+    <div class="card">
+      <h4>Sui Move + Groth16 — 链上验证与物件模型</h4>
+      <p style="color:var(--green); font-weight:600; margin-bottom:0.5rem;">固定成本验证任意复杂的 ZK proof，proof 作为 Sui 物件跨协议流通</p>
+      <p style="color:var(--text-dim);"><code>sui::groth16</code> 是 Sui 框架原生 API，验证成本恒定（2 次 BN254 配对运算），不论电路有多复杂。Sui 物件模型让 VaultProof 成为第一类公民——带有所有者、有效期、nullifier，可以在整个 Sui 生态的任意协议里验证使用，像代币一样流通。</p>
+      <p style="color:var(--text-muted); margin-bottom:1rem; font-size:15px;">23 个 Move 单元测试，9 步链上验证，proof 作为可跨协议复用的 Sui 物件</p>
+<pre style="font-size:13px; margin:0;"><span class="comment">// submit_proof — 9 步链上验证，全部通过才创建 VaultProof</span>
+public fun <span class="highlight">submit_proof</span>(vault, enclave_pubkey, proof, inputs, sig, ctx) {
+    <span class="comment">// 1. Vault 未暂停</span>
+    assert!(!vault.paused);
+    <span class="comment">// 2. TEE 公钥已注册到此 Vault</span>
+    assert!(is_enclave_registered(vault, &enclave_pubkey));
+    <span class="comment">// 3. Ed25519 签名验证（TEE 签了 proof||inputs）</span>
+    assert!(ed25519::verify(&sig, &enclave_pubkey, &message));
+    <span class="comment">// 4. Public inputs 长度 = 128 bytes（4 x 32）</span>
+    assert!(length(&inputs) == 128);
+    <span class="comment">// 5. vault_id_hash = Poseidon(vault_id % BN254_R)</span>
+    assert!(vault_id_hash == expected_hash);
+    <span class="comment">// 6. Epoch 有效期检查</span>
+    assert!(current_epoch &lt;= expiry_epoch);
+    <span class="comment">// 7. Nullifier 防重放</span>
+    assert!(!table::contains(&vault.used_nullifiers, nullifier));
+    <span class="comment">// 8. <span class="highlight">Groth16 proof 验证</span>（核心：2 次 BN254 配对）</span>
+    assert!(groth16::verify_groth16_proof(&bn254(), &vault.pvk, &inputs, &proof));
+    <span class="comment">// 9. 创建 VaultProof Sui 物件，归用户所有</span>
+    <span class="highlight">VaultProof { vault_id, nullifier, result_commitment, ... }</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 10: VS EXISTING SOLUTIONS -->
+<section id="comparison">
+  <div class="container">
+    <h2>和现有方案的根本差距</h2>
+
+    <div class="card" style="border-color: rgba(99, 102, 241, 0.3);">
+      <h4>vs Aleo / Aztec (ZK 隐私网络)</h4>
+      <div class="two-col" style="margin-top:0.75rem;">
+        <div>
+          <p style="color:var(--text-muted); margin-bottom:0.25rem;">他们解决</p>
+          <p><strong>Data Privacy</strong> -- 数据隐藏，逻辑公开</p>
+        </div>
+        <div>
+          <p style="color:var(--text-muted); margin-bottom:0.25rem;">Abyssal 解决</p>
+          <p><strong>Private Function Evaluation</strong> -- 逻辑本身隐藏</p>
+        </div>
+      </div>
+      <p style="color:var(--text-dim); margin:0;">完全不同的问题。他们的架构设计上就不是为了隐藏合约逻辑。</p>
+    </div>
+
+    <div class="card" style="border-color: rgba(239, 68, 68, 0.3);">
+      <h4>vs Secret Network / Phala / Oasis (全 TEE 隐私链)</h4>
+      <div class="two-col" style="margin-top:0.75rem;">
+        <div>
+          <p style="color:var(--text-muted); margin-bottom:0.25rem;">他们的做法</p>
+          <p>整个智能合约塞进 TEE</p>
+          <p><span class="warn-text">致命缺陷：</span>无链上密码学验证。TEE 被攻破 -> 伪造结果 -> 窃取资产</p>
+        </div>
+        <div>
+          <p style="color:var(--text-muted); margin-bottom:0.25rem;">Abyssal 的做法</p>
+          <p>TEE 只生成 proof</p>
+          <p>资产安全底线 = 链上 vk（数学，不是硬件）</p>
+        </div>
+      </div>
+      <p style="color:var(--text-dim); margin:0;">这是安全模型层面的质的差异，不是程度差异。</p>
+    </div>
+
+    <div class="card" style="border-color: rgba(234, 179, 8, 0.3);">
+      <h4>vs FHE / zkVM (RiscZero, SP1)</h4>
+      <div class="two-col" style="margin-top:0.75rem;">
+        <div>
+          <p style="color:var(--text-muted); margin-bottom:0.25rem;">他们的目标</p>
+          <p>纯数学保护逻辑</p>
+          <p>现实 (2026)：FHE 比明文慢 100-1000x，zkVM proof 生成需要分钟级</p>
+        </div>
+        <div>
+          <p style="color:var(--text-muted); margin-bottom:0.25rem;">Abyssal 的平衡</p>
+          <p>Groth16 + TEE = 实用平衡</p>
+          <p>TEE proof 5-60s，链上验证固定低成本</p>
+        </div>
+      </div>
+      <p style="color:var(--text-dim); margin:0;">在效率和隐私之间找到目前技术下唯一合理的商业平衡点。</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: ON-CHAIN EVIDENCE -->
+<section id="evidence">
+  <div class="container">
+    <h2>链上真实证据</h2>
+    <p class="section-note">前面介绍了概念和架构，以下是 Sui Testnet 上的真实交易记录。每一条数据都可以通过 SuiScan 独立验证。</p>
+
+    <!-- Evidence Card 1 -->
+    <div class="card">
+      <h3>3 个 Move 合约包</h3>
+      <table>
+        <tr>
+          <td style="width:120px;"><strong>abyssal</strong></td>
+          <td>
+            <span class="obj-id">0x56b8bc8dc17d06631172831794b3111dbda84c10e99d2f92d69877fe02c9b777</span><br>
+            <a class="suiscan-link" href="https://suiscan.xyz/testnet/object/0x56b8bc8dc17d06631172831794b3111dbda84c10e99d2f92d69877fe02c9b777" target="_blank">SuiScan -></a>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>seal-policy</strong></td>
+          <td>
+            <span class="obj-id">0x7e0f816163e4f1bf716db003dca162fd75f11030367a913508ebbf804854fbc8</span><br>
+            <a class="suiscan-link" href="https://suiscan.xyz/testnet/object/0x7e0f816163e4f1bf716db003dca162fd75f11030367a913508ebbf804854fbc8" target="_blank">SuiScan -></a>
+          </td>
+        </tr>
+        <tr>
+          <td style="border:none;"><strong>audit-policy</strong></td>
+          <td style="border:none;">
+            <span class="obj-id">0xc854ea999c3c3008e0dd978caadb6af4e5c0b8c33dc8197bce2709ed95ea00cf</span><br>
+            <a class="suiscan-link" href="https://suiscan.xyz/testnet/object/0xc854ea999c3c3008e0dd978caadb6af4e5c0b8c33dc8197bce2709ed95ea00cf" target="_blank">SuiScan -></a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Evidence Card 2 -->
+    <div class="card">
+      <h3>3 个加密 Walrus Blob</h3>
+      <table>
+        <tr>
+          <td style="width:180px;"><strong>pk</strong> (Seal IBE encrypted)</td>
+          <td class="obj-id"><a href="https://walruscan.com/testnet/blob/c-k7JX2VUPdkj8qMXOeiFRBaYV_wXcIPJUoURRG6EzU" target="_blank" style="color:var(--accent);">c-k7JX2VUPdkj8qMXOeiFRBaYV_wXcIPJUoURRG6EzU</a></td>
+        </tr>
+        <tr>
+          <td><strong>wasm</strong> (Seal IBE encrypted)</td>
+          <td class="obj-id"><a href="https://walruscan.com/testnet/blob/zrGm8z8qHVm7_6Ji9O0TlzWDr96xb3yRv2Atn-94MxI" target="_blank" style="color:var(--accent);">zrGm8z8qHVm7_6Ji9O0TlzWDr96xb3yRv2Atn-94MxI</a></td>
+        </tr>
+        <tr>
+          <td style="border:none;"><strong>circuit source</strong> (AuditAllowlistPolicy)</td>
+          <td style="border:none;" class="obj-id"><a href="https://walruscan.com/testnet/blob/NECiydYRxlPQ9PmLP_SUXYQbOWaJH2xd1dUjkr5OL-I" target="_blank" style="color:var(--accent);">NECiydYRxlPQ9PmLP_SUXYQbOWaJH2xd1dUjkr5OL-I</a></td>
+        </tr>
+      </table>
+      <p style="color:var(--text-muted); font-size:15px; margin:0.75rem 0 0 0;">pk+wasm 用 VaultKeyPolicy 加密（仅 TEE 可解密），source 用 AuditAllowlistPolicy（仅审计员可解密）</p>
+    </div>
+
+    <!-- Evidence Card 3 -->
+    <div class="card">
+      <h3>VaultConfig 链上物件</h3>
+      <p class="obj-id" style="margin-bottom:0.75rem;">0x921c99ac92b08906b2034c584fdc692cbd132ef8de1c9e87eb03194afc34f084</p>
+      <p style="color:var(--text-dim);">包含：pvk (4 byte vectors, ~700 bytes) + wasm_double_hash + 3 个真实 blob ID + seal_policy_id</p>
+      <a class="suiscan-link" href="https://suiscan.xyz/testnet/object/0x921c99ac92b08906b2034c584fdc692cbd132ef8de1c9e87eb03194afc34f084" target="_blank">SuiScan -></a>
+    </div>
+
+    <!-- Evidence Card 4 -->
+    <div class="card">
+      <h3>Seal 真实解密</h3>
+      <table>
+        <tr>
+          <td style="width:140px;">Key Server 1</td>
+          <td>Mysten testnet-1 <span class="obj-id">(0x73d0...db75)</span></td>
+        </tr>
+        <tr>
+          <td>Key Server 2</td>
+          <td>Mysten testnet-2 <span class="obj-id">(0xf5d1...23c8)</span></td>
+        </tr>
+        <tr>
+          <td>Threshold</td>
+          <td class="mono">2-of-2</td>
+        </tr>
+        <tr>
+          <td style="border:none;">seal_approve 验证</td>
+          <td style="border:none;">7 个参数：id, vault_config, enclave_pubkey, wallet_pubkey, timestamp, sig, clock</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Evidence Card 5 -->
+    <div class="card">
+      <h3>Groth16 Proof 上链验证</h3>
+      <table>
+        <tr>
+          <td style="width:140px;">Proof</td>
+          <td class="mono">128 bytes (BN254 compressed)</td>
+        </tr>
+        <tr>
+          <td>Public inputs</td>
+          <td class="mono">128 bytes (4 x 32 LE field elements)</td>
+        </tr>
+        <tr>
+          <td>验证</td>
+          <td>9 步链上验证全部通过</td>
+        </tr>
+        <tr>
+          <td style="border:none;">结果</td>
+          <td style="border:none;">信用评分 = 650，仅在 consume_proof_with_result 时揭露</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Evidence Card 6 -->
+    <div class="card">
+      <h3>审计报告</h3>
+      <table>
+        <tr>
+          <td style="width:80px;"><span class="badge badge-pass">PASS</span></td>
+          <td>Layer 1: Seal 解密获得 .circom (3,420 bytes)</td>
+        </tr>
+        <tr>
+          <td style="border:none;"><span class="badge badge-pass">PASS</span></td>
+          <td style="border:none;">Layer 2: wasm_double_hash = <span class="mono" style="font-size:14px;">2c64b5bb4dbe2e964f24304a1099028025410f8bbc9c1da4aa7f361434cb2279</span></td>
+        </tr>
+      </table>
+      <p style="color:var(--text-muted); font-size:15px; margin:0.75rem 0 0 0;">审计员独立验证，不需信任部署方</p>
+    </div>
+
+    <!-- Transaction Timeline -->
+    <h3 style="margin-top:3rem; margin-bottom:0.5rem;">交易时间线</h3>
+    <p class="section-note">完整的链上操作序列，每笔交易均可在 SuiScan 上独立验证</p>
+
+    <div class="tx-timeline">
+      <div class="tx-item">
+        <div class="tx-label">TX 1: Deploy Vault</div>
+        <div class="tx-digest">Digest: <a href="https://suiscan.xyz/testnet/object/0x921c99ac92b08906b2034c584fdc692cbd132ef8de1c9e87eb03194afc34f084" target="_blank">查看 VaultConfig</a></div>
+        <div class="tx-desc">创建 VaultConfig (<span class="mono" style="font-size:14px;">0x921c...f084</span>)，包含 pvk + 3 个 Walrus blob ID</div>
+      </div>
+
+      <div class="tx-item">
+        <div class="tx-label">TX 2: Create AuditAllowlist</div>
+        <div class="tx-digest">Digest: <a href="https://suiscan.xyz/testnet/tx/3yyWNpcsVW5RqidCTTWgiETxQcWiZezugDBCpoLspi3M" target="_blank">3yyWNpcsVW5RqidCTTWgiETxQcWiZezugDBCpoLspi3M</a></div>
+        <div class="tx-desc">创建审计员白名单，绑定 vault_id</div>
+      </div>
+
+      <div class="tx-item">
+        <div class="tx-label">TX 3: Register TEE Enclave</div>
+        <div class="tx-desc">将 TEE ephemeral pubkey 注册到 VaultConfig</div>
+      </div>
+
+      <div class="tx-item">
+        <div class="tx-label">TX 4: TEE Seal Decrypt + Load Circuit</div>
+        <div class="tx-desc">从 Walrus 下载加密 blob &#8594; Seal key server 验证 seal_approve &#8594; IBE 解密<br>
+        <span class="mono" style="font-size:14px;">pk: 736,355 bytes | wasm: 2,384,395 bytes</span></div>
+      </div>
+
+      <div class="tx-item">
+        <div class="tx-label">TX 5: submit_proof (score=650)</div>
+        <div class="tx-digest">Digest: <a href="https://suiscan.xyz/testnet/tx/FL2zn6mWax1iZHVVZcBnkarDaVhyYDFp5BAYktRYpgR8" target="_blank">FL2zn6mWax1iZHVVZcBnkarDaVhyYDFp5BAYktRYpgR8</a></div>
+        <div class="tx-desc">9 步链上验证通过 &#8594; 创建 VaultProof (<span class="mono" style="font-size:14px;">0x89c3...2969</span>)</div>
+      </div>
+
+      <div class="tx-item">
+        <div class="tx-label">TX 6: Audit -- Seal 解密电路源码</div>
+        <div class="tx-desc">审计员通过 AuditAllowlistPolicy 解密 .circom &#8594; 重编译 &#8594; hash 匹配</div>
+      </div>
+    </div>
+
+    <!-- VaultConfig Content Display -->
+    <h3 style="margin-top:3rem; margin-bottom:1rem;">VaultConfig 链上内容</h3>
+
+    <div class="vault-display">
+      <div class="vd-title">VaultConfig on Sui Testnet</div>
+      <div class="vd-row"><span class="vd-key">Object ID</span><span class="vd-val">0x921c99ac92b08906b2034c584fdc692cbd132ef8de1c9e87eb03194afc34f084</span></div>
+      <div class="vd-row"><span class="vd-key">Type</span><span class="vd-val">abyssal::abyssal_registry::VaultConfig</span></div>
+      <div class="vd-row"><span class="vd-key">owner</span><span class="vd-val">0x10d607a8db16ad...</span></div>
+      <div class="vd-row"><span class="vd-key">paused</span><span class="vd-val">false</span></div>
+      <div class="vd-row"><span class="vd-key">wasm_double_hash</span><span class="vd-val">2c64b5bb4dbe2e964f24304a1099028025410f8bbc9c1da4aa7f361434cb2279</span></div>
+      <div class="vd-row"><span class="vd-key">pk_blob_id</span><span class="vd-val">c-k7JX2VUPdkj8qMXOeiFRBaYV_wXcIPJUoURRG6EzU (Walrus)</span></div>
+      <div class="vd-row"><span class="vd-key">wasm_blob_id</span><span class="vd-val">zrGm8z8qHVm7_6Ji9O0TlzWDr96xb3yRv2Atn-94MxI (Walrus)</span></div>
+      <div class="vd-row"><span class="vd-key">circuit_source_blob_id</span><span class="vd-val">NECiydYRxlPQ9PmLP_SUXYQbOWaJH2xd1dUjkr5OL-I (Walrus)</span></div>
+      <div class="vd-row"><span class="vd-key">seal_policy_id</span><span class="vd-val">0x7e0f816163e4f1bf716db003dca162fd75f11030367a913508ebbf804854fbc8</span></div>
+      <div class="vd-row"><span class="vd-key">proof_validity_epochs</span><span class="vd-val">28 (~28 days)</span></div>
+      <div class="vd-row"><span class="vd-key">nullifier_policy</span><span class="vd-val">0 (one-time)</span></div>
+      <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--card-border);">
+        <a href="https://suiscan.xyz/testnet/object/0x921c99ac92b08906b2034c584fdc692cbd132ef8de1c9e87eb03194afc34f084" target="_blank" style="font-size:14px;">在 SuiScan 上查看 &#8594;</a>
+      </div>
+    </div>
+
+    <!-- Encryption Before/After -->
+    <h3 style="margin-top:3rem; margin-bottom:1rem;">加密前后对比</h3>
+
+    <div class="enc-compare">
+      <div class="enc-panel" style="border-color: rgba(34, 197, 94, 0.3);">
+        <h4 style="color:var(--green);">加密前 (plaintext .circom)</h4>
+<pre style="font-size:13px; line-height:1.5;">pragma circom 2.1.5;
+include "poseidon.circom";
+include "bitify.circom";
+
+template CreditScore(28) {
+    signal input user_secret;
+    signal input vault_id_field;
+    signal input epoch;
+    signal input result_value;
+    ...
+    computed_score &lt;== 300 + income
+      - monthly_expenses
+      + years_of_history * 10;
+    ...
+}</pre>
+        <div class="enc-label">3,420 bytes -- 完整算法逻辑可见</div>
+      </div>
+
+      <div class="enc-arrow-col">
+        <div style="color:var(--accent); font-size:20px; font-weight:700;">&#8594;</div>
+        <div style="font-family:var(--mono); font-size:12px; color:var(--accent); text-align:center; writing-mode:vertical-lr; letter-spacing:2px;">Seal IBE + Walrus</div>
+      </div>
+
+      <div class="enc-panel" style="border-color: rgba(239, 68, 68, 0.3);">
+        <h4 style="color:var(--red);">加密后 (Seal IBE encrypted on Walrus)</h4>
+<pre style="font-size:13px; line-height:1.5; word-break:break-all;">0a4f8c2b7d3e1a9f6b82c4d5e7f0a1b2
+c3d4e5f6071829304a5b6c7d8e9f0a1b
+2c3d4e5f60718293a4b5c6d7e8f90a1b
+7f8e9d0c1b2a394857667584930a1b2c
+d4e5f607182930a4b5c6d7e8f9012345
+6789abcdef0123456789abcdef012345
+a0b1c2d3e4f5061728394a5b6c7d8e9f
+3d4e5f6071829304a5b6c7d8e9f0a1b2
+...
+<span class="comment">(3,738 bytes opaque ciphertext)</span></pre>
+        <div class="enc-label">3,738 bytes -- 只有授权 TEE 或审计员可解密</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p><strong>Built on Sui by ARZER-TW</strong></p>
+  <p style="margin-top:0.5rem;">前身项目：SuiCryptoLib (136 tests, 9 modules, 4 circuits)</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+    "user_secret": "12345678901234567890",
+    "vault_id_field": "98765432109876543210",
+    "epoch": "100",
+    "result_value": "650",
+    "result_salt": "999888777666555444",
+    "income": "5000",
+    "monthly_expenses": "4800",
+    "years_of_history": "15"
+}

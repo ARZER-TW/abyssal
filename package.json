@@ -1,0 +1,27 @@
+{
+  "name": "abyssal",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ARZER-TW/abyssal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ARZER-TW/abyssal/issues"
+  },
+  "homepage": "https://github.com/ARZER-TW/abyssal#readme",
+  "dependencies": {
+    "@mysten/seal": "^1.1.1",
+    "@mysten/sui": "^2.12.0"
+  }
+}

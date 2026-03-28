@@ -1,0 +1,12 @@
+{
+  "vaultId": "0x921c99ac92b08906b2034c584fdc692cbd132ef8de1c9e87eb03194afc34f084",
+  "allowlistId": "0x2280b8406afd5e094463090e6165701aa574bd893a1c16d58b9178cd6e2c69bc",
+  "pkBlobId": "c-k7JX2VUPdkj8qMXOeiFRBaYV_wXcIPJUoURRG6EzU",
+  "wasmBlobId": "zrGm8z8qHVm7_6Ji9O0TlzWDr96xb3yRv2Atn-94MxI",
+  "circuitSourceBlobId": "NECiydYRxlPQ9PmLP_SUXYQbOWaJH2xd1dUjkr5OL-I",
+  "abyssalPackageId": "0x56b8bc8dc17d06631172831794b3111dbda84c10e99d2f92d69877fe02c9b777",
+  "sealPolicyId": "0x7e0f816163e4f1bf716db003dca162fd75f11030367a913508ebbf804854fbc8",
+  "auditPolicyId": "0xc854ea999c3c3008e0dd978caadb6af4e5c0b8c33dc8197bce2709ed95ea00cf",
+  "deployer": "0x10d607a8db16ad791595e1010a5c97f5eb8578852599ff5b8c22f37a40ebc61b",
+  "wasmDoubleHash": "2c64b5bb4dbe2e964f24304a1099028025410f8bbc9c1da4aa7f361434cb2279"
+}

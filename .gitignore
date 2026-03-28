@@ -1,0 +1,26 @@
+node_modules/
+build/
+dist/
+*.seal
+*.wtns
+*.zkey
+*.r1cs
+*.sym
+witness.json
+package-lock.json
+
+# Move build artifacts
+move/abyssal/build/
+move/abyssal-seal-policy/build/
+move/abyssal-audit-policy/build/
+move/abyssal/Published.toml
+move/abyssal-seal-policy/Published.toml
+move/abyssal-audit-policy/Published.toml
+
+# Circuit build artifacts
+circuits/credit_score/build/
+circuits/node_modules/
+
+# Temp
+/tmp/
+.DS_Store

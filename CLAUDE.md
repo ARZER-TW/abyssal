@@ -1,71 +1,182 @@
-# Abyssal — Project Instructions
+# Abyssal — CLAUDE.md
 
-## 核心原则
+**Canonical spec:** `docs/ABYSSAL_SPEC_v2.1.1.md` — read before making any
+design decision. This file only contains gotchas and quick reference.
 
-1. **SPEC 是唯一真理来源。** 所有实作决策以 `docs/SPEC.md` (v2.1.1) 为准。当代码与 SPEC 冲突时，以 SPEC 为准。
-2. **Sui Stack 以官方文档为准。** Sui Move、Seal、Walrus、Nautilus 的所有相关内容永远以 https://docs.sui.io/ 上的文档为准。不依赖过时的博客文章或第三方资料。
-3. **先思考，再行动。** 做任何修改前先深度思考影响范围和潜在风险。品质永远优先于速度。
-4. **不猜测，要验证。** 对 Sui API、Seal SDK、Walrus、Nautilus 的行为不做假设，用代码实测确认。
+**Project:** First Web3 PFE (Private Function Evaluation) protocol.
+Encrypts Groth16 pk+wasm with Seal IBE, generates proofs inside Nautilus TEE,
+puts pvk on-chain. Part of SuiCryptoLib (ARZER-TW).
 
-## 项目概述
+---
 
-Abyssal 是第一个 Web3 Private Function Evaluation (PFE) 协议。通过加密 Groth16 proving key + wasm（Seal IBE + Walrus），由 Nautilus TEE 在硬件安全边界内生成 proof，pvk 上链让任何人验证。
-
-**前身：** SuiCryptoLib (`/home/james/projects/suicryptolib/`)
-
-## 关键技术约束（必须遵守）
-
-- `pvk_from_bytes` 重建 pvk（低 gas），不用 `prepare_verifying_key`（高 gas）
-- `ctx.epoch()` 获取 Sui epoch（~24h），`clock::epoch()` 不存在
-- `poseidon::poseidon_bn254(&vector[...])` — 参数是 `&vector<u256>`，返回 `u256`
-- PCR 是 48 bytes SHA-384，不是 32 bytes
-- Seal `seal_approve` 函数名必须以 `seal_approve` 开头，第一个参数必须是 `id: vector<u8>`
-- Seal 通过 `dry_run_transaction_block` 评估 `seal_approve`，只读不改状态
-- Nautilus enclave 无直接网络访问，Seal key load 需要 host 做中介（2-phase）
-- Groth16 最多 8 个 public inputs（VECS 标准用 4 个）
-- Event struct 必须在 emit 所在的同一个 module 中定义
-- Sui `Table` 不可迭代，需要配合 `vector` 做遍历
-
-## Hackathon 简化
-
-- Nautilus TEE 用 mock（普通服务器模拟）
-- Seal 用 testnet DKS 或单 key server
-- Move 合约中 enclave 用 pubkey 注册（不引用 Nautilus Enclave 对象）
-
-## 文件结构
-
+## Layout
 ```
-/home/james/projects/abyssal/
-├── docs/SPEC.md                  ← 唯一规格来源
-├── move/                         ← Move 合约
-│   ├── sources/
-│   │   ├── abyssal_types.move    ← 字节转换 helpers
-│   │   ├── abyssal_registry.move ← VaultConfig + VaultProof + 核心逻辑
-│   │   └── abyssal_registry_tests.move
-│   └── Move.toml
-├── circuits/                     ← VECS 标准电路（待建）
-├── sdk/                          ← TypeScript SDK（待建）
-├── tee/                          ← Nautilus TEE mock（待建）
-└── frontend/                     ← Demo 前端（待建）
+move/abyssal/sources/          # abyssal_registry (VaultConfig + VaultProof + events),
+                               # abyssal_types (byte conversion helpers)
+move/abyssal-seal-policy/      # seal_approve for TEE access (depends on abyssal)
+move/abyssal-audit-policy/     # seal_approve + AuditAllowlist for auditors
+circuits/credit_score/         # Demo VECS-compliant circuit (819 constraints)
+tee/abyssal-prover/            # Nautilus TEE Rust server (planned)
+sdk/src/                       # TypeScript SDK (planned)
+docs/SPEC.md                   # CANONICAL SPEC v2.1.1
 ```
 
-## 当前进度
+## Testnet Deployment (2026-03-27)
+```
+abyssal:             0x56b8bc8dc17d06631172831794b3111dbda84c10e99d2f92d69877fe02c9b777
+abyssal-seal-policy: 0x7e0f816163e4f1bf716db003dca162fd75f11030367a913508ebbf804854fbc8
+abyssal-audit-policy:0xc854ea999c3c3008e0dd978caadb6af4e5c0b8c33dc8197bce2709ed95ea00cf
+Deployer:            0x10d607a8db16ad791595e1010a5c97f5eb8578852599ff5b8c22f37a40ebc61b
+```
 
-- Phase 1 进行中：abyssal_types (7 tests) + abyssal_registry (7 tests) = 14 tests passing
-- 剩余 submit_proof/verify/consume 测试需要 Phase 2 电路测试向量
+NOTE: Sui requires event structs in the same module as event::emit.
+Events and VaultProof stay in abyssal_registry (not separate modules).
+SPEC section 6.6 abyssal_events is aspirational; Sui does not support it.
 
-## 过往踩坑记录
+---
 
-- `use sui::clock::Clock` 只导入类型不导入函数 → 用 `use sui::clock::{Self, Clock}`
-- circomlibjs 在浏览器需要 `vite-plugin-node-polyfills`（Buffer/events/util）
-- snarkjs 在 Vite 需要 `optimizeDeps.include: ["snarkjs"]`
-- Balance<SUI> 的 JSON 序列化是直接字符串不是 `{ fields: { value } }`
-- 格式转换（snarkjs → Sui Arkworks）的参考实现在 suicryptolib 的 `circuits/poc/format_for_sui.mjs`
+## Critical Gotchas — Read Every Time
 
-## 编码规范
+### 1. Epoch in Move = ctx.epoch(), NOT Clock
+```move
+// ✅
+let epoch = ctx.epoch();
 
-- Move edition: 2024.beta
-- 所有 Move 测试用 `sui::test_scenario`
-- 前端语言：简体中文
-- 不在代码中使用 emoji
-- Commit message 不标注 AI co-author
+// ❌ clock has NO epoch() method — it does not exist
+let epoch = clock::epoch(clock);
+```
+
+`Clock` only has `clock::timestamp_ms(clock)`.
+- `submit_proof` — no Clock param, uses ctx.epoch()
+- `verify_vault_proof` — no Clock param, uses ctx.epoch()
+- `consume_proof_with_result` — no Clock param, uses ctx.epoch()
+- `seal_approve` — YES Clock param, for timestamp_ms anti-replay only
+
+### 2. Poseidon in Move = poseidon_bn254, no poseidon_N variants
+```move
+// ✅
+poseidon::poseidon_bn254(&vector[a_u256, b_u256])
+
+// ❌ these do not exist
+poseidon::poseidon_1(x)
+poseidon::poseidon_2(x, y)
+```
+
+Circom `Poseidon(N)` component syntax is fine and unchanged.
+
+### 3. pvk = pvk_from_bytes, NOT prepare_verifying_key on-chain
+```move
+// ✅ low gas — 4 components pre-computed off-chain by SDK
+let pvk = groth16::pvk_from_bytes(gamma_abc, alpha_beta, gamma_neg, delta_neg);
+
+// ❌ high gas — never call this on-chain
+groth16::prepare_verifying_key(&groth16::bn254(), &raw_vk_bytes);
+```
+
+### 4. PCR = 48 bytes (SHA-384), not 32
+
+Each of PCR0/1/2 from AWS Nitro = 48 bytes. All comparisons fail if 32-byte.
+
+### 5. submit_proof takes tee_signature, NOT attestation bytes
+
+Attestation verified ONCE at TEE registration (high gas).
+Per-proof: only `tee_signature: vector<u8>` (64 bytes Ed25519).
+Message signed = `proof_bytes || public_inputs_bytes`.
+
+### 6. Two completely separate epoch systems
+
+| | Unit | Duration | Used for |
+|---|---|---|---|
+| Sui epoch | epoch | ~24h | proof_validity_epochs, ctx.epoch() |
+| Walrus epoch | epoch | 2 weeks | blob storage walrus_epochs |
+
+`proof_validity_epochs = 28` → ~28 days.
+`walrus_epochs = 52` → ~2 years of blob storage.
+Never assign one to the other.
+
+### 7. seal_approve must NOT mutate state
+
+Called via `dry_run_transaction_block` by Seal key server.
+Any state mutation = silent failure. Entry fun, read-only.
+First param must be `id: vector<u8>`. Abyssal uses `id == vector[0u8]`.
+
+### 8. Public inputs = exactly 128 bytes (4 × 32 LE field elements)
+
+Order: `nullifier | result_commitment | vault_id_hash | expiry_epoch`
+Always assert `vector::length(&public_inputs_bytes) == 128`.
+Groth16 max public inputs = 8. VECS uses 4.
+
+### 9. vault_id must be reduced modulo BN254_R before Poseidon
+
+Sui object IDs are 32-byte hashes. As u256, they can exceed BN254 scalar field
+order. `poseidon_bn254` aborts if input >= BN254_R. Both contract and circuit
+must reduce: `vault_id_field = vault_id_u256 % BN254_R`. Circom does this
+implicitly; Move must do it explicitly.
+
+### 10. vault_id hex is big-endian, bytes32_to_u256 is little-endian
+
+Sui displays object IDs as big-endian hex (`0xe2d4...10`).
+Move `bytes32_to_u256` treats bytes[0] as LSB (little-endian).
+SDK/frontend MUST reverse byte order when computing vault_id_field:
+```javascript
+// WRONG: BigInt("0x" + vaultIdHex)  -- big-endian interpretation
+// RIGHT: LE interpretation matching Move bytes32_to_u256
+const bytes = Buffer.from(vaultIdHex, "hex");
+let u256 = 0n;
+for (let i = 0; i < 32; i++) u256 |= BigInt(bytes[i]) << BigInt(i * 8);
+```
+
+### 11. pk AND wasm must both be encrypted
+
+wasm is compiled from circuit — reverse-engineerable without encryption.
+Both go to Walrus via Seal IBE. pk uses VaultKeyPolicy. wasm uses VaultKeyPolicy.
+Circuit source uses AuditAllowlistPolicy (different package).
+
+---
+
+### 12. @mysten/seal decrypt() = full 2-phase key load internally
+
+Seal SDK `sealClient.decrypt()` internally does:
+1. `SessionKey.createRequestParams()` — generates BLS12-381 ElGamal keypair
+2. `fetchKeysForAllIds()` — POST `/v1/fetch_key` to key servers
+3. `elgamalDecrypt()` — BLS G1 point arithmetic to decrypt responses
+4. AES-256-GCM decrypt the final plaintext
+
+For Node.js TEE mock (has network), use `sealClient.decrypt()` directly.
+For production Nitro Enclave (no network), need 2-phase split via Seal CLI.
+
+### 13. @mysten/sui v2.x breaking changes
+
+v2 renamed core client: `SuiClient` -> `SuiJsonRpcClient` (from `@mysten/sui/jsonRpc`).
+`getFullnodeUrl` -> `getJsonRpcFullnodeUrl`. The root project uses v2 (@mysten/seal requires it).
+SDK subdir still uses v1 — will need migration when updating.
+
+### 14. Walrus testnet aggregator for blob download
+
+```
+GET https://aggregator.walrus-testnet.walrus.space/v1/blobs/<blob-id>
+```
+Epoch duration: 1 day (testnet), 14 days (mainnet). Max 53 epochs.
+
+---
+
+## Key External Docs
+
+- Sui Groth16: https://docs.sui.io/guides/developer/cryptography/groth16
+- Nautilus design: https://docs.sui.io/guides/developer/nautilus/nautilus-design
+- Nautilus + Seal: https://docs.sui.io/guides/developer/nautilus/seal
+- Seal usage: https://seal-docs.wal.app/UsingSeal
+- Walrus: https://docs.wal.app/
+
+**MCP tool available:** Use `mcp__sui-knowledge-docs__search_sui_knowledge_sources`
+to query Sui official docs in real-time. Always prefer this over cached knowledge
+for Sui Move APIs, Seal SDK, Walrus CLI, and Nautilus interfaces.
+
+## Predecessor Project
+
+SuiCryptoLib at `/home/james/projects/suicryptolib/` is the engineering foundation.
+Key reusable assets:
+- `circuits/poc/format_for_sui.mjs` — snarkjs-to-Sui Arkworks format conversion (G1/G2 compression, LE byte order, y-sign bit)
+- `circuits/pot13.ptau`, `circuits/pot15.ptau` — Powers of Tau ceremony files
+- `sdk/src/` — ESM + circomlibjs patterns for SDK scaffold
+- `move/sources/groth16_poc.move` — Groth16 bridge pattern reference (but Abyssal uses pvk_from_bytes, not prepare_verifying_key)

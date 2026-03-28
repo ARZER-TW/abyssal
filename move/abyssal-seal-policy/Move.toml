@@ -1,9 +1,10 @@
 [package]
-name = "abyssal"
+name = "abyssal_seal_policy"
 edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+abyssal = { local = "../abyssal" }
 
 [addresses]
-abyssal = "0x0"
+abyssal_seal_policy = "0x0"
