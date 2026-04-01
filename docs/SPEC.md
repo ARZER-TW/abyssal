@@ -463,7 +463,7 @@ module suicryptolib::abyssal_registry {
         expiry_epoch: u64,
 
         // Original proof (for re-submission when reusing across protocols)
-        proof_bytes: vector<u8>,         // 192 bytes Groth16 proof
+        proof_bytes: vector<u8>,         // 128 bytes Groth16 proof (BN254 compressed: A=32 + B=64 + C=32)
         public_inputs_bytes: vector<u8>, // 4 x 32 = 128 bytes
 
         // Enclave object ID that produced this proof (audit trail)
@@ -581,7 +581,7 @@ module suicryptolib::abyssal_registry {
     public fun submit_proof(
         vault: &mut VaultConfig,
         enclave: &nautilus_enclave::Enclave,  // Nautilus Enclave object (contains ephemeral_pubkey)
-        groth16_proof_bytes: vector<u8>,      // 192 bytes Groth16 proof
+        groth16_proof_bytes: vector<u8>,      // 128 bytes Groth16 proof (BN254 compressed: A=32 + B=64 + C=32)
         public_inputs_bytes: vector<u8>,      // 4 x 32 = 128 bytes
         tee_signature: vector<u8>,            // TEE ephemeral key Ed25519 signature of (proof||inputs), 64 bytes
         ctx: &mut TxContext,
@@ -618,13 +618,14 @@ module suicryptolib::abyssal_registry {
         let nullifier = extract_bytes(&public_inputs_bytes, 0, 32);
         let result_commitment = extract_bytes(&public_inputs_bytes, 32, 32);
         let vault_id_hash = extract_bytes(&public_inputs_bytes, 64, 32);
-        let expiry_epoch = le_bytes_to_u64(extract_bytes(&public_inputs_bytes, 96, 8));
+        let expiry_epoch = le_bytes_to_u64(extract_bytes(&public_inputs_bytes, 96, 32));
 
         // Step 7: Verify vault_id_hash
         // Poseidon_bn254([vault_id_as_u256]) should equal vault_id_hash in public input
         // NOTE: Sui's poseidon_bn254 accepts vector<u256>, returns u256
+        // vault_id must be reduced modulo BN254_R (poseidon aborts if input >= field order)
         let vault_id_bytes = object::id_to_bytes(&object::id(vault));
-        let vault_id_u256 = bytes32_to_u256(vault_id_bytes);
+        let vault_id_u256 = bytes32_to_u256(vault_id_bytes) % BN254_R;
         let expected_vault_id_hash_u256 = poseidon::poseidon_bn254(
             &vector[vault_id_u256]
         );
@@ -1204,7 +1205,7 @@ fn process_data(user_request: EncryptedUserRequest) -> ProcessDataResponse {
     let (proof, public_inputs) = groth16_prove(CACHED_PK, witness);
 
     // 6. Serialize
-    let proof_bytes = serialize_proof(proof);                  // 192 bytes
+    let proof_bytes = serialize_proof(proof);                  // 128 bytes (BN254 compressed)
     let inputs_bytes = serialize_public_inputs(public_inputs); // 128 bytes
 
     // 7. Sign with ephemeral key
@@ -1707,7 +1708,7 @@ Walrus epochs are only used for blob storage period calculation (see Section 8).
 
 | Data | Size |
 |---|---|
-| Groth16 proof | 192 bytes (fixed) |
+| Groth16 proof | 128 bytes (BN254 compressed, fixed) |
 | Public inputs (4 x 32 bytes) | 128 bytes |
 | TEE Ed25519 signature | 64 bytes |
 | **On-chain submission payload** | **384 bytes** |

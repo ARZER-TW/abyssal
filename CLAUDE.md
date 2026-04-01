@@ -1,6 +1,6 @@
 # Abyssal — CLAUDE.md
 
-**Canonical spec:** `docs/ABYSSAL_SPEC_v2.1.1.md` — read before making any
+**Canonical spec:** `docs/SPEC.md` (v2.1.1) — read before making any
 design decision. This file only contains gotchas and quick reference.
 
 **Project:** First Web3 PFE (Private Function Evaluation) protocol.
@@ -15,9 +15,11 @@ move/abyssal/sources/          # abyssal_registry (VaultConfig + VaultProof + ev
                                # abyssal_types (byte conversion helpers)
 move/abyssal-seal-policy/      # seal_approve for TEE access (depends on abyssal)
 move/abyssal-audit-policy/     # seal_approve + AuditAllowlist for auditors
-circuits/credit_score/         # Demo VECS-compliant circuit (819 constraints)
-tee/abyssal-prover/            # Nautilus TEE Rust server (planned)
-sdk/src/                       # TypeScript SDK (planned)
+circuits/credit_score/         # Demo circuit (819 constraints, 4 Poseidon-hash outputs)
+tee/abyssal-prover/            # Node.js TEE server (real Seal decrypt + Walrus download)
+sdk/src/                       # TypeScript SDK (pvk, hashes, vault, proof)
+scripts/                       # deploy_full.mjs, audit_vault.mjs, deployment.json
+demo/                          # Static demo/presentation page (index.html)
 docs/SPEC.md                   # CANONICAL SPEC v2.1.1
 ```
 
