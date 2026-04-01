@@ -533,7 +533,6 @@ th {
     <p class="tagline">可验证私有函数评估协议 (Verifiable Private Function Evaluation Protocol)</p>
     <p class="one-liner">第一个让「算法私密、结果可信、无需盲目信任中间人」同时成立的 Web3 协议</p>
     <p class="sub-note">基于 Sui 生态的 SuiCryptoLib + Seal + Walrus + Nautilus + Groth16 原生整合</p>
-    <!-- stats moved to Section 12 -->
   </div>
 </section>
 
@@ -879,7 +878,7 @@ template <span class="highlight">CreditScore</span>(VALIDITY_DURATION) {
 
     <div class="card">
       <h4>Layer 1: 电路身份确认</h4>
-      <p style="color:var(--text-dim); margin-bottom:0.5rem;">审计员通过 Seal 解密拿到电路原始码（.circom），亲眼看到算法逻辑：「score = 300 + income - expenses + years * 10」。这不是部署方口头告诉他的，是他自己从链上加密存储中解密出来的。</p>
+      <p style="color:var(--text-dim); margin-bottom:0.5rem;">审计员通过 Seal 解密拿到电路原始码（.circom），亲眼看到完整的算法逻辑——输入变量、计算公式、约束条件全部可读。这不是部署方口头告诉他的，是他自己从链上加密存储中解密出来的。</p>
       <p style="color:var(--text-muted); margin:0; font-size:15px;">技术：Seal AuditAllowlistPolicy 解密 -> 获得 circuit.circom (3,420 bytes)</p>
     </div>
 
@@ -904,7 +903,7 @@ template <span class="highlight">CreditScore</span>(VALIDITY_DURATION) {
     <div class="card">
       <h4>Layer 5: Trusted Setup Ceremony 参与</h4>
       <p style="color:var(--text-dim); margin-bottom:0.5rem;">在最高安全需求的场景，审计员亲自参与密钥生成仪式。只要参与者中至少一个人是诚实的，整个系统就是安全的。这让审计员从「被告知电路是什么」变成「亲自参与确认电路是什么」。</p>
-      <p style="color:var(--text-muted); margin:0; font-size:15px;">��术：snarkjs zkey contribute，MPC ceremony ���方参与</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">技术：snarkjs zkey contribute，MPC ceremony 多方参与</p>
     </div>
 
     <div class="highlight-box" style="margin-top:2rem;">
@@ -914,7 +913,7 @@ template <span class="highlight">CreditScore</span>(VALIDITY_DURATION) {
         <li><strong style="color:var(--green);">不需相信机构对所有用户用同样标准</strong> — 同一个 vk，数学上完全一致，电路结构上不可能存在歧视性分支</li>
         <li><strong style="color:var(--green);">不需相信机构没泄露你的数据</strong> — 数据在 TEE 硬件边界内处理，从不上链，从不离开 enclave</li>
       </ul>
-      <p style="color:var(--text-dim); margin-top:1rem; margin-bottom:0; font-size:16px;">安全底线：即使 TEE 硬件被攻破，最坏结果是部署方的算法商业机密泄露（商业损失）。但用户的链上资产绝对安全——因为攻击者即使拿到 pk，也无法伪造一个满足所有约束条件的 Groth16 proof 来骗过链上验证。</p>
+      <p style="color:var(--text-dim); margin-top:1rem; margin-bottom:0; font-size:16px;">安全底线：即使 TEE 硬件被攻破，最坏结果是部署方的算法商业机密泄露（商业损失）。攻击者无法绕过电路约束伪造 proof，也无法直接窃取链上资金。相比纯 TEE 隐私链中 TEE 被攻破 = 攻击者可伪造任意执行结果并直接窃取资产，这是根本性的安全层级差异。</p>
     </div>
   </div>
 </section>
@@ -992,8 +991,8 @@ entry fun <span class="highlight">seal_approve</span>(
     <div class="card">
       <h4>Nautilus — 可验证链外计算</h4>
       <p style="color:var(--green); font-weight:600; margin-bottom:0.5rem;">在硬件安全边界内执行计算，算法和数据从不暴露</p>
-      <p style="color:var(--text-dim);">在 AWS Nitro Enclave 硬件安全边界内执行 proof 生成。wasm 和用户数据从不离开 enclave。PCR attestation 把「计算发生在可信环境」从口头承诺变成可被 Move 合约验证的密码学哈希。最关键的安全分层：TEE 被攻破只导致算法泄露，资产安全不受影响（底线是链上 vk 的数学保证）。</p>
-      <p style="color:var(--text-muted); margin:0; font-size:15px;">对比纯 TEE 隐私链：TEE 被攻破 = 用户资产直接被盗。Abyssal：TEE 被攻破 = 部署方算法泄露（商业损失），但用户链上资产绝对安全</p>
+      <p style="color:var(--text-dim);">在 AWS Nitro Enclave 硬件安全边界内执行 proof 生成。wasm 和用户数据从不离开 enclave。PCR attestation 把「计算发生在可信环境」从口头承诺变成可被 Move 合约验证的密码学哈希。最关键的安全分层：TEE 被攻破只导致算法泄露（商业损失），攻击者无法绕过电路约束伪造 proof，也无法直接窃取链上资金。</p>
+      <p style="color:var(--text-muted); margin:0; font-size:15px;">对比纯 TEE 隐私链：TEE 被攻破 = 攻击者可伪造任意结果并窃取资产。Abyssal：TEE 被攻破 = 部署方算法泄露（商业损失），但攻击者无法绕过电路约束伪造 proof</p>
     </div>
 
     <div class="card">
@@ -1237,7 +1236,7 @@ public fun <span class="highlight">submit_proof</span>(vault, enclave_pubkey, pr
       <div class="tx-item">
         <div class="tx-label">TX 5: submit_proof (score=650)</div>
         <div class="tx-digest">Digest: <a href="https://suiscan.xyz/testnet/tx/FL2zn6mWax1iZHVVZcBnkarDaVhyYDFp5BAYktRYpgR8" target="_blank">FL2zn6mWax1iZHVVZcBnkarDaVhyYDFp5BAYktRYpgR8</a></div>
-        <div class="tx-desc">9 步链上验证通过 &#8594; 创建 VaultProof (<span class="mono" style="font-size:14px;">0x89c3...2969</span>)</div>
+        <div class="tx-desc">9 步链上验证通过 &#8594; 创建 VaultProof (<a href="https://suiscan.xyz/testnet/object/0x89c3917881b46a261617e5d6917d6feeb462b4d9e989b52ec70ab86e03842969" target="_blank" style="font-size:14px;">0x89c3...2969</a>)</div>
       </div>
 
       <div class="tx-item">

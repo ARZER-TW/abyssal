@@ -21,6 +21,12 @@ move/abyssal-audit-policy/Published.toml
 circuits/credit_score/build/
 circuits/node_modules/
 
+# Script outputs (generated at runtime)
+scripts/audit_output/
+
+# Sui keystore backup
+*.bak
+
 # Temp
 /tmp/
 .DS_Store

@@ -25,10 +25,5 @@ export {
   consumeProofWithResult,
 } from "./proof.js";
 
-// TEE administration
-export {
-  initSealKeyLoad,
-  completeSealKeyLoad,
-  loadCircuit,
-} from "./tee-admin.js";
-export type { SealKeyLoadInit } from "./tee-admin.js";
+// TEE administration: call TEE /admin/* endpoints directly via HTTP
+// See tee/abyssal-prover/src/routes/admin.ts and seal-load.ts
